@@ -1,0 +1,420 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Inter', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(110, 91, 255, 0.22), transparent 30%),
+    radial-gradient(circle at top right, rgba(226, 166, 59, 0.12), transparent 22%),
+    linear-gradient(180deg, #0f1218 0%, #11151d 40%, #0e1117 100%);
+  color: #f3efe4;
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: transparent;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  opacity: 0.35;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  position: relative;
+  overflow: clip;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 6vw;
+  backdrop-filter: blur(18px);
+  background: rgba(14, 17, 23, 0.65);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.topbar__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e2a63b, #6e5bff);
+  box-shadow: 0 0 16px rgba(110, 91, 255, 0.7);
+}
+
+.topbar__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  color: rgba(243, 239, 228, 0.74);
+  font-size: 0.92rem;
+}
+
+.topbar__nav a:hover,
+.topbar__nav a:focus-visible {
+  color: #f3efe4;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+.panel,
+.section-block {
+  width: min(1180px, calc(100% - 12vw));
+  margin: 0 auto;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 2rem;
+  padding: 2rem 0 3rem;
+}
+
+.panel__copy,
+.section-heading,
+.cta-block,
+.architecture__note {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 23, 31, 0.72);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.panel__copy,
+.architecture__note,
+.cta-block {
+  border-radius: 28px;
+}
+
+.panel__copy {
+  padding: 2rem;
+}
+
+.panel__kicker,
+.section-heading__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  color: #e2a63b;
+}
+
+.panel__copy h2,
+.section-heading h2,
+.cta-block h2 {
+  margin: 0.85rem 0 0.85rem;
+  font-family: 'Fraunces', ui-serif, serif;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-size: clamp(2rem, 3vw, 3.25rem);
+}
+
+.panel__copy p,
+.section-heading p,
+.architecture__note p,
+.cta-block p,
+.feature-card p,
+.workflow-card p {
+  margin: 0;
+  color: rgba(243, 239, 228, 0.72);
+}
+
+.panel__statgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.stat-card,
+.feature-card,
+.workflow-card,
+.roadmap-pill,
+.architecture__node {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+.stat-card {
+  padding: 1.2rem;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 9rem;
+}
+
+.stat-card span,
+.workflow-card__step,
+.architecture__node span {
+  color: rgba(243, 239, 228, 0.55);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+
+.stat-card strong {
+  font-size: 1.6rem;
+  line-height: 1.1;
+}
+
+.section-block {
+  padding: 4rem 0 0;
+}
+
+.section-block--wide {
+  padding-bottom: 4rem;
+}
+
+.section-block--split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.section-heading {
+  border-radius: 28px;
+  padding: 1.8rem;
+}
+
+.section-heading h2 {
+  font-size: clamp(1.8rem, 2.6vw, 3rem);
+}
+
+.feature-grid,
+.workflow-grid,
+.roadmap-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.feature-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature-card,
+.workflow-card {
+  border-radius: 24px;
+  padding: 1.35rem;
+}
+
+.feature-card h3,
+.workflow-card h3,
+.architecture__note h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.08rem;
+}
+
+.workflow-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workflow-card {
+  min-height: 14rem;
+}
+
+.workflow-card__step {
+  display: inline-flex;
+  margin-bottom: 1rem;
+  color: #a79bff;
+}
+
+.architecture {
+  padding-top: 4.5rem;
+}
+
+.architecture__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.75fr);
+  gap: 1rem;
+}
+
+.architecture__diagram {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.architecture__node {
+  border-radius: 22px;
+  padding: 1.2rem;
+  min-height: 8.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.architecture__node strong {
+  font-size: 1.02rem;
+  line-height: 1.35;
+}
+
+.architecture__note {
+  padding: 1.6rem;
+}
+
+.roadmap-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.roadmap-pill {
+  border-radius: 999px;
+  padding: 1rem 1.15rem;
+  color: rgba(243, 239, 228, 0.9);
+}
+
+.cta-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1.5rem;
+  padding: 2rem;
+  margin-bottom: 4rem;
+}
+
+.cta-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f3efe4, #e2a63b);
+  color: #11151d;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cta-link:hover,
+.cta-link:focus-visible {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1100px) {
+  .panel,
+  .section-block--split,
+  .architecture__layout,
+  .feature-grid,
+  .workflow-grid,
+  .roadmap-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .panel {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-block {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    position: sticky;
+    padding: 0.95rem 1rem;
+  }
+
+  .panel,
+  .section-block {
+    width: min(100% - 2rem, 1180px);
+  }
+
+  .panel,
+  .section-block--split,
+  .architecture__layout,
+  .feature-grid,
+  .workflow-grid,
+  .roadmap-grid,
+  .panel__statgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar__nav {
+    display: none;
+  }
+
+  .cta-block,
+  .panel__copy,
+  .section-heading,
+  .architecture__note {
+    border-radius: 24px;
+  }
+
+  .feature-card,
+  .workflow-card,
+  .roadmap-pill,
+  .architecture__node {
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
