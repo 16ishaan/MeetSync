@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Orb from "./Orb";
 import SpecularButton from "./SpecularButton";
 import TextPressure from "../TextPressure";
+import MagicBento from "./MagicBento";
 import "./Hero.css";
 
 const launchCards = [
@@ -75,33 +76,21 @@ export default function Hero() {
             </button>
           </div>
 
-          <div className="card-grid">
-            {launchCards.map((card) => (
-              <article
-                key={card.id}
-                className={`magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow particle-container ${card.itemClass}`}
-                style={{
-                  "--glow-intensity": 0.85,
-                  "--glow-radius": "260px",
-                }}
-              >
-                <div className="magic-bento-card__header">
-                  <span className="magic-bento-card__label">{card.label}</span>
-                  <span className="hero__card-accent">{card.accent}</span>
-                </div>
-
-                <div className="magic-bento-card__content">
-                  <h2 className="magic-bento-card__title">{card.title}</h2>
-                  <p className="magic-bento-card__description">
-                    {card.description}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <MagicBento 
+            cards={launchCards}
+            textAutoHide={true}
+            enableStars={true}
+            enableSpotlight={true}
+            enableBorderGlow={true}
+            enableTilt={true}
+            enableMagnetism={true}
+            clickEffect={true}
+            spotlightRadius={300}
+            particleCount={12}
+            glowColor="132, 0, 255"
+          />
 
           <div className="hero__launchpad-footer">
-            <span className="global-spotlight" aria-hidden="true" />
             <button
               type="button"
               className="hero__launchpad-continue"
