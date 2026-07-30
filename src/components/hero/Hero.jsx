@@ -1,151 +1,193 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Orb from "./Orb";
+import SpecularButton from "./SpecularButton";
+import TextPressure from "../TextPressure";
 import "./Hero.css";
 
-// The "minutes" that type themselves out beside the Orb — numbered because
-// real meeting minutes are numbered agenda/decision/action items.
-const MINUTE_LINES = [
-  "Approved the Q3 launch budget",
-  "Priya owns the vendor follow-up",
-  "Next sync: Thursday, 10:00",
+const launchCards = [
+  {
+    id: "record",
+    itemClass: "magic-bento-card--item-1",
+    label: "01",
+    title: "In-Browser Audio Recorder",
+    description:
+      "Capture meetings instantly from any tab and turn live audio into a structured summary without leaving the browser.",
+    accent: "Record",
+  },
+  {
+    id: "speech",
+    itemClass: "magic-bento-card--item-2",
+    label: "02",
+    title: "Web Speech Intelligence",
+    description:
+      "Use speech recognition to generate clean transcripts, decisions, and action items as the conversation moves.",
+    accent: "Transcript",
+  },
+  {
+    id: "upload",
+    itemClass: "magic-bento-card--item-3",
+    label: "03",
+    title: "Audio File Upload",
+    description:
+      "Drop in existing recordings to produce minutes of meeting, highlights, and next steps in a single pass.",
+    accent: "Upload",
+  },
 ];
 
-function useTypedMinutes(
-  lines,
-  { typeSpeed = 28, holdTime = 1400, pauseBetween = 500 } = {},
-) {
-  const [visibleLines, setVisibleLines] = useState([""]);
-  const reducedMotion = useRef(
-    typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+export default function Hero() {
+  const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
+  const [showLaunchpad, setShowLaunchpad] = useState(false);
 
   useEffect(() => {
-    if (reducedMotion.current) {
-      setVisibleLines(lines);
-      return;
-    }
-
-    let cancelled = false;
-    let timeoutId;
-
-    async function run() {
-      while (!cancelled) {
-        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-          const full = lines[lineIndex];
-          for (let charIndex = 1; charIndex <= full.length; charIndex++) {
-            if (cancelled) return;
-            await new Promise((res) => {
-              timeoutId = setTimeout(res, typeSpeed);
-            });
-            setVisibleLines((prev) => {
-              const next = prev.slice(0, lineIndex);
-              next[lineIndex] = full.slice(0, charIndex);
-              return next;
-            });
-          }
-          await new Promise((res) => {
-            timeoutId = setTimeout(res, pauseBetween);
-          });
-        }
-        await new Promise((res) => {
-          timeoutId = setTimeout(res, holdTime);
-        });
-        if (cancelled) return;
-        setVisibleLines([""]);
-        await new Promise((res) => {
-          timeoutId = setTimeout(res, 300);
-        });
-      }
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
+    const updateClock = () => {
+      setTimeLabel(formatKolkataTime());
     };
-  }, [lines, typeSpeed, holdTime, pauseBetween]);
 
-  return visibleLines;
-}
+    updateClock();
+    const intervalId = window.setInterval(updateClock, 1000);
 
-export default function Hero() {
-  const typedLines = useTypedMinutes(MINUTE_LINES);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   return (
-    <section className="hero">
-      <div className="hero__grid">
-        <div className="hero__copy">
-          <div className="hero__eyebrow">
-            <span className="hero__eyebrow-dot" aria-hidden="true" />
-            09:41 · LIVE
-          </div>
-
-          <h1 className="hero__headline">
-            Every meeting,
-            <br />
-            written down
-            <br />
-            <em>before it ends.</em>
-          </h1>
-
-          <p className="hero__subcopy">
-            Docket listens in, drafts clean minutes as you talk, and hands your
-            team a finished record — decisions, owners, and deadlines — the
-            second the call wraps.
-          </p>
-
-          <div className="hero__actions">
-            <button className="hero__cta hero__cta--primary">
-              Start capturing minutes
-              <span aria-hidden="true">&nbsp;→</span>
-            </button>
-            <button className="hero__cta hero__cta--secondary">
-              Watch a 90-second demo
-            </button>
-          </div>
-
-          <p className="hero__footnote">
-            No plugin to install. Works with any call.
-          </p>
-        </div>
-
-        <div className="hero__stage">
-          <div className="hero__orb-wrap">
-            <Orb
-              hue={265}
-              hoverIntensity={0.35}
-              rotateOnHover
-              backgroundColor="#14171F"
-            />
-          </div>
-
-          <div className="hero__minutes-card" role="status" aria-live="polite">
-            <div className="hero__minutes-header">
-              <span>MINUTES</span>
-              <span className="hero__minutes-clock">32:14</span>
+    <section className={`hero ${showLaunchpad ? "hero--launchpad" : ""}`}>
+      {showLaunchpad ? (
+        <div className="hero__launchpad bento-section">
+          <div className="hero__launchpad-header">
+            <div>
+              <p className="hero__launchpad-kicker">MeetSync setup</p>
+              <h1 className="hero__launchpad-title">
+                Pick how you want to capture the meeting.
+              </h1>
+              <p className="hero__launchpad-copy">
+                Start a live recording, listen with web speech, or upload an
+                existing file. The new interface keeps the workflow focused and
+                card-driven.
+              </p>
             </div>
-            <ol className="hero__minutes-list">
-              {MINUTE_LINES.map((line, i) => (
-                <li
-                  key={line}
-                  className={i < typedLines.length ? "is-active" : ""}
-                >
-                  <span className="hero__minutes-index">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span>
-                    {typedLines[i] || ""}
-                    {i === typedLines.length - 1 && (
-                      <span className="hero__cursor" />
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ol>
+
+            <button
+              type="button"
+              className="hero__back-button"
+              onClick={() => setShowLaunchpad(false)}
+            >
+              Back to hero
+            </button>
+          </div>
+
+          <div className="card-grid">
+            {launchCards.map((card) => (
+              <article
+                key={card.id}
+                className={`magic-bento-card magic-bento-card--text-autohide magic-bento-card--border-glow particle-container ${card.itemClass}`}
+                style={{
+                  "--glow-intensity": 0.85,
+                  "--glow-radius": "260px",
+                }}
+              >
+                <div className="magic-bento-card__header">
+                  <span className="magic-bento-card__label">{card.label}</span>
+                  <span className="hero__card-accent">{card.accent}</span>
+                </div>
+
+                <div className="magic-bento-card__content">
+                  <h2 className="magic-bento-card__title">{card.title}</h2>
+                  <p className="magic-bento-card__description">
+                    {card.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hero__launchpad-footer">
+            <span className="global-spotlight" aria-hidden="true" />
+            <button
+              type="button"
+              className="hero__launchpad-continue"
+              onClick={() => setShowLaunchpad(false)}
+            >
+              Return to landing view
+            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="hero__branding">
+            <div style={{ position: "relative", height: "300px" }}>
+              <TextPressure
+                text="MeetSync"
+                flex={true}
+                alpha={false}
+                stroke={false}
+                width={true}
+                weight={true}
+                italic={true}
+                textColor="#ffffff"
+                strokeColor="#ff0000"
+                minFontSize={36}
+              />
+            </div>
+          </div>
+
+          <div className="hero__grid">
+            <div className="hero__copy">
+              <div className="hero__eyebrow">
+                <span className="hero__eyebrow-dot" aria-hidden="true" />
+                <span className="hero__eyebrow-time">{timeLabel}</span>
+                <span className="hero__eyebrow-sep" aria-hidden="true">
+                  ·
+                </span>
+              </div>
+
+              <h1 className="hero__headline">
+                Every meeting,
+                <br />
+                written down
+                <br />
+                <em>before it ends.</em>
+              </h1>
+
+              <div className="hero__actions">
+                <SpecularButton onClick={() => setShowLaunchpad(true)}>
+                  Get Started
+                </SpecularButton>
+                <button className="hero__cta hero__cta--secondary">
+                  Watch a 90-second demo
+                </button>
+              </div>
+
+              <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto">
+                MeetSync captures your meetings and uses AI to transform raw
+                audio into structured Minutes of Meeting in seconds. No
+                sign-ups, no account setup, and zero friction just instant
+                summaries, key decisions, and assigned tasks ready to share with
+                your team.
+              </p>
+            </div>
+
+            <div className="hero__stage">
+              <div className="hero__orb-wrap">
+                <Orb
+                  hue={265}
+                  hoverIntensity={0.35}
+                  rotateOnHover
+                  backgroundColor="#14171F"
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
+}
+
+function formatKolkataTime() {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Kolkata",
+  }).format(new Date());
 }
