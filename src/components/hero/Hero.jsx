@@ -51,6 +51,7 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
@@ -72,6 +73,10 @@ export default function Hero() {
   const handleGetStarted = async () => {
     if (user) {
       setShowLaunchpad(true);
+      return;
+    }
+    if (!supabase) {
+      console.error('Supabase not configured');
       return;
     }
     const { error } = await supabase.auth.signInWithOAuth({
