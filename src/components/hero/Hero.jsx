@@ -3,13 +3,14 @@ import Orb from "./Orb";
 import SpecularButton from "./SpecularButton";
 import TextPressure from "../TextPressure";
 import MagicBento from "./MagicBento";
+import StaggeredMenu from "../StaggeredMenu/StaggeredMenu";
+import { supabase } from "../../lib/supabase";
 import "./Hero.css";
 
 const launchCards = [
   {
     id: "record",
     itemClass: "magic-bento-card--item-1",
-    label: "01",
     title: "In-Browser Audio Recorder",
     description:
       "Capture meetings instantly from any tab and turn live audio into a structured summary without leaving the browser.",
@@ -18,7 +19,6 @@ const launchCards = [
   {
     id: "speech",
     itemClass: "magic-bento-card--item-2",
-    label: "02",
     title: "Web Speech Intelligence",
     description:
       "Use speech recognition to generate clean transcripts, decisions, and action items as the conversation moves.",
@@ -27,7 +27,6 @@ const launchCards = [
   {
     id: "upload",
     itemClass: "magic-bento-card--item-3",
-    label: "03",
     title: "Audio File Upload",
     description:
       "Drop in existing recordings to produce minutes of meeting, highlights, and next steps in a single pass.",
@@ -38,6 +37,7 @@ const launchCards = [
 export default function Hero() {
   const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
   const [showLaunchpad, setShowLaunchpad] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const updateClock = () => {
@@ -50,8 +50,55 @@ export default function Hero() {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      if (session && window.location.hash.includes("access_token")) {
+        // If we just redirected back from login, optionally show launchpad
+        setShowLaunchpad(true);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleGetStarted = async () => {
+    if (user) {
+      setShowLaunchpad(true);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    
+    if (error) {
+      console.error('Error logging in with Google:', error.message);
+    }
+  };
+
   return (
     <section className={`hero ${showLaunchpad ? "hero--launchpad" : ""}`}>
+      {showLaunchpad && (
+        <StaggeredMenu
+          position="right"
+          isFixed={true}
+          items={[
+            { label: "Home", link: "#", onClick: () => setShowLaunchpad(false) },
+            { label: "About", link: "#" },
+          ]}
+          socialItems={[
+            { label: "Twitter", link: "#" },
+            { label: "GitHub", link: "#" },
+          ]}
+        />
+      )}
       {showLaunchpad ? (
         <div className="hero__launchpad bento-section">
           <div className="hero__launchpad-header">
@@ -67,16 +114,10 @@ export default function Hero() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className="hero__back-button"
-              onClick={() => setShowLaunchpad(false)}
-            >
-              Back to hero
-            </button>
+
           </div>
 
-          <MagicBento 
+          <MagicBento
             cards={launchCards}
             textAutoHide={true}
             enableStars={true}
@@ -91,13 +132,6 @@ export default function Hero() {
           />
 
           <div className="hero__launchpad-footer">
-            <button
-              type="button"
-              className="hero__launchpad-continue"
-              onClick={() => setShowLaunchpad(false)}
-            >
-              Return to landing view
-            </button>
           </div>
         </div>
       ) : (
@@ -127,6 +161,11 @@ export default function Hero() {
                 <span className="hero__eyebrow-sep" aria-hidden="true">
                   ·
                 </span>
+                {user && (
+                  <span className="hero__eyebrow-user">
+                    Welcome, {user.user_metadata?.full_name || user.email}
+                  </span>
+                )}
               </div>
 
               <h1 className="hero__headline">
@@ -138,12 +177,9 @@ export default function Hero() {
               </h1>
 
               <div className="hero__actions">
-                <SpecularButton onClick={() => setShowLaunchpad(true)}>
-                  Get Started
+                <SpecularButton onClick={handleGetStarted}>
+                  {user ? "Go to Dashboard" : "Get Started"}
                 </SpecularButton>
-                <button className="hero__cta hero__cta--secondary">
-                  Watch a 90-second demo
-                </button>
               </div>
 
               <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto">

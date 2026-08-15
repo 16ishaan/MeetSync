@@ -3,3 +3,6 @@ dist
 .vscode
 .DS_Store
 npm-debug.log*
+.env
+*.timestamp-*.mjs
+StaggeredMenu-JS-CSS.json
