@@ -38,6 +38,7 @@ export default function Hero() {
   const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
   const [showLaunchpad, setShowLaunchpad] = useState(false);
   const [user, setUser] = useState(null);
+  const [authUnavailable, setAuthUnavailable] = useState(!supabase);
 
   useEffect(() => {
     const updateClock = () => {
@@ -51,10 +52,14 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setAuthUnavailable(true);
+      return;
+    }
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      setAuthUnavailable(false);
       if (session && window.location.hash.includes("access_token")) {
         // If we just redirected back from login, optionally show launchpad
         setShowLaunchpad(true);
@@ -65,6 +70,7 @@ export default function Hero() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
+      setAuthUnavailable(false);
     });
 
     return () => subscription.unsubscribe();
@@ -76,15 +82,21 @@ export default function Hero() {
       return;
     }
     if (!supabase) {
-      console.error('Supabase not configured');
+      setAuthUnavailable(true);
+      console.error(
+        "Google sign-in requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.",
+      );
       return;
     }
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}`,
+      },
     });
-    
+
     if (error) {
-      console.error('Error logging in with Google:', error.message);
+      console.error("Error logging in with Google:", error.message);
     }
   };
 
@@ -95,7 +107,11 @@ export default function Hero() {
           position="right"
           isFixed={true}
           items={[
-            { label: "Home", link: "#", onClick: () => setShowLaunchpad(false) },
+            {
+              label: "Home",
+              link: "#",
+              onClick: () => setShowLaunchpad(false),
+            },
             { label: "About", link: "#" },
           ]}
           socialItems={[
@@ -118,8 +134,6 @@ export default function Hero() {
                 card-driven.
               </p>
             </div>
-
-
           </div>
 
           <MagicBento
@@ -136,8 +150,7 @@ export default function Hero() {
             glowColor="132, 0, 255"
           />
 
-          <div className="hero__launchpad-footer">
-          </div>
+          <div className="hero__launchpad-footer"></div>
         </div>
       ) : (
         <>
@@ -182,10 +195,25 @@ export default function Hero() {
               </h1>
 
               <div className="hero__actions">
-                <SpecularButton onClick={handleGetStarted}>
-                  {user ? "Go to Dashboard" : "Get Started"}
+                <SpecularButton
+                  onClick={handleGetStarted}
+                  disabled={authUnavailable}
+                >
+                  {user
+                    ? "Go to Dashboard"
+                    : authUnavailable
+                      ? "Login Unavailable"
+                      : "Get Started"}
                 </SpecularButton>
               </div>
+
+              {authUnavailable && (
+                <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto text-red-300">
+                  Google sign-in is disabled until you add your Supabase env
+                  vars. Create a .env file with VITE_SUPABASE_URL and
+                  VITE_SUPABASE_ANON_KEY.
+                </p>
+              )}
 
               <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto">
                 MeetSync captures your meetings and uses AI to transform raw
