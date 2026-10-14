@@ -3,6 +3,7 @@ import Orb from "./Orb";
 import SpecularButton from "./SpecularButton";
 import TextPressure from "../TextPressure";
 import MagicBento from "./MagicBento";
+import SavedRecordings from "./SavedRecordings";
 import StaggeredMenu from "../StaggeredMenu/StaggeredMenu";
 import { supabase } from "../../lib/supabase";
 import "./Hero.css";
@@ -29,7 +30,7 @@ const launchCards = [
     itemClass: "magic-bento-card--item-3",
     title: "Audio File Upload",
     description:
-      "Drop in existing recordings to produce minutes of meeting, highlights, and next steps in a single pass.",
+      "Upload an MP3 recording to produce minutes of meeting, highlights, and next steps in a single pass.",
     accent: "Upload",
   },
 ];
@@ -37,6 +38,7 @@ const launchCards = [
 export default function Hero() {
   const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
   const [showLaunchpad, setShowLaunchpad] = useState(false);
+  const [showSavedRecordings, setShowSavedRecordings] = useState(false);
   const [user, setUser] = useState(null);
   const [authUnavailable, setAuthUnavailable] = useState(!supabase);
 
@@ -77,27 +79,7 @@ export default function Hero() {
   }, []);
 
   const handleGetStarted = async () => {
-    if (user) {
-      setShowLaunchpad(true);
-      return;
-    }
-    if (!supabase) {
-      setAuthUnavailable(true);
-      console.error(
-        "Google sign-in requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.",
-      );
-      return;
-    }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}`,
-      },
-    });
-
-    if (error) {
-      console.error("Error logging in with Google:", error.message);
-    }
+    setShowLaunchpad(true);
   };
 
   return (
@@ -112,7 +94,11 @@ export default function Hero() {
               link: "#",
               onClick: () => setShowLaunchpad(false),
             },
-            { label: "About", link: "#" },
+            {
+              label: "Saved recordings",
+              link: "#",
+              onClick: () => setShowSavedRecordings(true),
+            },
           ]}
           socialItems={[
             { label: "Twitter", link: "#" },
@@ -122,33 +108,39 @@ export default function Hero() {
       )}
       {showLaunchpad ? (
         <div className="hero__launchpad bento-section">
-          <div className="hero__launchpad-header">
-            <div>
-              <p className="hero__launchpad-kicker">MeetSync setup</p>
-              <h1 className="hero__launchpad-title">
-                Pick how you want to capture the meeting.
-              </h1>
-              <p className="hero__launchpad-copy">
-                Start a live recording, listen with web speech, or upload an
-                existing file. The new interface keeps the workflow focused and
-                card-driven.
-              </p>
-            </div>
-          </div>
+          {showSavedRecordings ? (
+            <SavedRecordings onBack={() => setShowSavedRecordings(false)} />
+          ) : (
+            <>
+              <div className="hero__launchpad-header">
+                <div>
+                  <p className="hero__launchpad-kicker">MeetSync setup</p>
+                  <h1 className="hero__launchpad-title">
+                    Pick how you want to capture the meeting.
+                  </h1>
+                  <p className="hero__launchpad-copy">
+                    Start a live recording, listen with web speech, or upload an
+                    existing file. The new interface keeps the workflow focused
+                    and card-driven.
+                  </p>
+                </div>
+              </div>
 
-          <MagicBento
-            cards={launchCards}
-            textAutoHide={true}
-            enableStars={true}
-            enableSpotlight={true}
-            enableBorderGlow={true}
-            enableTilt={true}
-            enableMagnetism={true}
-            clickEffect={true}
-            spotlightRadius={300}
-            particleCount={12}
-            glowColor="132, 0, 255"
-          />
+              <MagicBento
+                cards={launchCards.map((card) => ({ ...card, user }))}
+                textAutoHide={true}
+                enableStars={true}
+                enableSpotlight={true}
+                enableBorderGlow={true}
+                enableTilt={true}
+                enableMagnetism={true}
+                clickEffect={true}
+                spotlightRadius={300}
+                particleCount={12}
+                glowColor="132, 0, 255"
+              />
+            </>
+          )}
 
           <div className="hero__launchpad-footer"></div>
         </div>
@@ -195,15 +187,8 @@ export default function Hero() {
               </h1>
 
               <div className="hero__actions">
-                <SpecularButton
-                  onClick={handleGetStarted}
-                  disabled={authUnavailable}
-                >
-                  {user
-                    ? "Go to Dashboard"
-                    : authUnavailable
-                      ? "Login Unavailable"
-                      : "Get Started"}
+                <SpecularButton onClick={handleGetStarted}>
+                  {user ? "Go to Dashboard" : "Try Recorder"}
                 </SpecularButton>
               </div>
 

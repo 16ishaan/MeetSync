@@ -37,6 +37,7 @@
   max-width: 600px;
   padding: 2rem 1rem 0;
   z-index: 5;
+  pointer-events: none;
 }
 
 .hero__grid {
@@ -378,4 +379,4 @@
     grid-row: 2;
     aspect-ratio: auto;
   }
-}
+}
