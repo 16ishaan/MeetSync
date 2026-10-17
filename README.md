@@ -2,6 +2,14 @@
 
 Capture a meeting, review its transcript, generate editable Minutes of Meeting (MOM), and download a formatted PDF. The existing Orb, TextPressure, specular button, particles, glow, tilt, and menu animations are preserved.
 
+## Browser-only mode (default)
+
+**No Python server is needed for MOM generation or PDF download.** Run `npm install` and `npm run dev`, then paste a transcript or use Live Speech, click **Generate MOM**, review, and **Download MOM as PDF**.
+
+Default generation runs English extractive rules entirely in the browser; it is explicitly labeled as a draft, not an AI summary. Missing owners and deadlines are not guessed. PDF export also runs locally and preserves the device font rendering, including supported non-Latin scripts. Pages are raster images rather than selectable/searchable text. Glyph availability depends on the fonts installed on the device.
+
+To opt into the optional AI backend, set `VITE_MOM_USE_BACKEND=true` in the frontend `.env` and restart Vite. Backend failures fall back to browser generation instead of blocking the workflow. Audio-file and recorded-audio Whisper transcription still require the Python service; live microphone transcription uses the browser speech service.
+
 ## Workflow
 
 1. Sign in with the existing Supabase Google authentication.
@@ -37,7 +45,7 @@ python -m uvicorn transcription_server:app --host 127.0.0.1 --port 8000
 
 If PowerShell blocks activation, run `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` and `.\.venv\Scripts\python.exe -m uvicorn transcription_server:app --host 127.0.0.1 --port 8000` instead. No policy change is needed.
 
-The backend must be running for audio transcription, MOM generation, and PDF downloads. Live browser speech transcription does not require Whisper. Whisper loads lazily on the first audio transcription and may download model files then; choose `WHISPER_MODEL=tiny` for a lighter CPU model. Default: base / CPU / int8.
+The backend must be running for Whisper audio transcription and optional AI generation. Browser MOM generation and PDF downloads do not use it. Live browser speech transcription does not require Whisper. Whisper loads lazily on the first audio transcription and may download model files then; choose `WHISPER_MODEL=tiny` for a lighter CPU model. Default: base / CPU / int8.
 
 ## Environment
 
@@ -70,8 +78,8 @@ This uses the local Ollama structured-output API; no paid API key is needed. Opt
 - Audio: MP3 uploads in the UI; backend supports MP3, WebM, WAV, M4A, MP4, OGG, up to 100 MB. Transcript input is limited to 60,000 characters. Automatic section lists are limited to 50 entries; review long meetings for omissions.
 - Live speech captures the microphone, not other tabs; the browser may send audio to its speech service. Use a compatible browser on HTTPS or localhost and allow the microphone.
 - Tab recording captures tab audio plus microphone. Enable **Share tab audio** in the browser picker. Obtain participant consent as appropriate before recording.
-- Audio is saved on-device and, when configured and signed in, in the existing private Supabase bucket. Text is sent to your configured backend; optional AI runs at `OLLAMA_URL`. PDF generation is on the backend and does not persist documents there.
-- PDF export embeds the Bitstream Vera fonts bundled with ReportLab. Unsupported characters are rejected with a readable error rather than rendered as boxes. Use English text for reliable PDF output; Indic script export is not supported by this font.
+- Audio is saved on-device and, when configured and signed in, in the existing private Supabase bucket. Text is sent to your configured backend; optional AI runs at `OLLAMA_URL`. PDF downloads are generated in the browser; they do not send minutes to the backend.
+- The optional legacy backend PDF endpoint uses Bitstream Vera and has limited script coverage. The default browser PDF download renders through installed device fonts instead.
 - The FastAPI service is intended for **local development** and binds to loopback. It has no server authentication or rate limiting. Before internet deployment, add authenticated endpoints, request/rate limits, HTTPS, and an explicit `CORS_ORIGINS` allowlist. Browser sign-in alone does not protect API endpoints.
 
 ## API and validation

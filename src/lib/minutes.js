@@ -1,3 +1,5 @@
+import { extractMinutes } from "./localMinutes";
+
 const API = (import.meta.env.VITE_TRANSCRIPTION_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 
 async function request(path, data, timeout = 190000) {
@@ -21,15 +23,18 @@ async function request(path, data, timeout = 190000) {
 }
 
 export async function generateMinutes(data) {
-  return (await request("/minutes", data)).json();
+  // Default to browser mode: no localhost service, CORS or Python dependency.
+  if (import.meta.env.VITE_MOM_USE_BACKEND !== "true") return extractMinutes(data);
+  try { return await (await request("/minutes", data)).json(); }
+  catch {
+    const draft = extractMinutes(data);
+    draft.notice = "AI backend unavailable. Created a browser extractive draft instead. Review classifications, owners and deadlines before sharing.";
+    return draft;
+  }
 }
 
 export async function downloadMinutesPdf(minutes) {
-  const response = await request("/minutes/pdf", minutes, 30000);
-  const url = URL.createObjectURL(await response.blob());
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${minutes.title.replace(/[^a-z0-9_-]+/gi, "-").slice(0, 80) || "meeting"}-MOM.pdf`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const { buildMinutesPdf } = await import("./browserPdf");
+  const pdf = await buildMinutesPdf(minutes);
+  pdf.save(`${minutes.title.replace(/[^a-z0-9_-]+/gi, "-").slice(0, 80) || "meeting"}-MOM.pdf`);
 }
