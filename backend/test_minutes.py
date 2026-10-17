@@ -42,6 +42,14 @@ class MinutesTests(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertLessEqual(len(result.json()["summary"]), 12000)
 
+    def test_local_development_cors(self):
+        for origin in ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:3000"]:
+            response = self.client.options("/minutes", headers={"Origin": origin, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "content-type"})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.headers["access-control-allow-origin"], origin)
+        response = self.client.options("/minutes", headers={"Origin": "https://localhost.evil.example", "Access-Control-Request-Method": "POST"})
+        self.assertEqual(response.status_code, 400)
+
     def test_invalid_input(self):
         for transcript in ['', 'hello', ' '*30, 'x'*60001]:
             self.assertEqual(self.client.post('/minutes', json={'transcript': transcript}).status_code, 422)

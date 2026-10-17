@@ -18,6 +18,8 @@ app = FastAPI(title="MeetSync meeting intelligence")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")],
+    # Vite chooses another port when 5173 is busy. Only allow loopback hosts.
+    allow_origin_regex=r"^https?://(?:localhost|127\.0\.0\.1)(?::[0-9]+)?$",
     allow_credentials=False,
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
