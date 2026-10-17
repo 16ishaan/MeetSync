@@ -40,6 +40,8 @@ export default function Hero() {
   const [showLaunchpad, setShowLaunchpad] = useState(false);
   const [showSavedRecordings, setShowSavedRecordings] = useState(false);
   const [user, setUser] = useState(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [authUnavailable, setAuthUnavailable] = useState(!supabase);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function Hero() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
       setAuthUnavailable(false);
-      if (session && window.location.hash.includes("access_token")) {
+      if (session) {
         // If we just redirected back from login, optionally show launchpad
         setShowLaunchpad(true);
       }
@@ -73,13 +75,32 @@ export default function Hero() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       setAuthUnavailable(false);
+      if (_event === "SIGNED_IN" && session) setShowLaunchpad(true);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const handleGetStarted = async () => {
-    setShowLaunchpad(true);
+    if (user) {
+      setShowLaunchpad(true);
+      return;
+    }
+    if (!supabase || isSigningIn) return;
+
+    setAuthError("");
+    setIsSigningIn(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + window.location.pathname },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(error.message || "Unable to sign in with Google. Please try again.");
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   return (
@@ -187,10 +208,15 @@ export default function Hero() {
               </h1>
 
               <div className="hero__actions">
-                <SpecularButton onClick={handleGetStarted}>
-                  {user ? "Go to Dashboard" : "Try Recorder"}
+                <SpecularButton
+                  onClick={handleGetStarted}
+                  disabled={isSigningIn || (!user && authUnavailable)}
+                >
+                  {user ? "Go to Dashboard" : isSigningIn ? "Connecting…" : "Login with Google"}
                 </SpecularButton>
               </div>
+
+              {authError && <p className="hero__footnote" role="alert">{authError}</p>}
 
               {authUnavailable && (
                 <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto text-red-300">
@@ -202,9 +228,8 @@ export default function Hero() {
 
               <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto">
                 MeetSync captures your meetings and uses AI to transform raw
-                audio into structured Minutes of Meeting in seconds. No
-                sign-ups, no account setup, and zero friction just instant
-                summaries, key decisions, and assigned tasks ready to share with
+                audio into structured Minutes of Meeting in seconds. Sign in
+                with Google to get summaries, key decisions, and assigned tasks ready to share with
                 your team.
               </p>
             </div>
