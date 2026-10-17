@@ -22,7 +22,7 @@ const launchCards = [
     itemClass: "magic-bento-card--item-2",
     title: "Web Speech Intelligence",
     description:
-      "Use speech recognition to generate clean transcripts, decisions, and action items as the conversation moves.",
+      "Turn microphone audio into a live transcript. Choose your language, review the text, and download it when you finish.",
     accent: "Transcript",
   },
   {

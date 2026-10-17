@@ -3,6 +3,7 @@ import { gsap } from "gsap";
 import "./MagicBento.css";
 import AudioRecorder from "./AudioRecorder";
 import AudioFileUpload from "./AudioFileUpload";
+import WebSpeechIntelligence from "./WebSpeechIntelligence";
 
 const DEFAULT_PARTICLE_COUNT = 12;
 const DEFAULT_SPOTLIGHT_RADIUS = 300;
@@ -543,10 +544,11 @@ const MagicBento = ({
             },
           };
 
-          const CardContent = () => (
+          const cardContent = (
             <>
               {card.id === "record" && <AudioRecorder user={card.user} />}
               {card.id === "upload" && <AudioFileUpload user={card.user} />}
+              {card.id === "speech" && <WebSpeechIntelligence />}
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">{card.label}</div>
                 {card.accent && (
@@ -574,7 +576,7 @@ const MagicBento = ({
                 clickEffect={clickEffect}
                 enableMagnetism={enableMagnetism}
               >
-                <CardContent />
+                {cardContent}
               </ParticleCard>
             );
           }
@@ -691,7 +693,7 @@ const MagicBento = ({
                 el.addEventListener("click", handleClick);
               }}
             >
-              <CardContent />
+              {cardContent}
             </article>
           );
         })}

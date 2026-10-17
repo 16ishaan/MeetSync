@@ -1,0 +1,13 @@
+.web-speech { position: relative; z-index: 2; display: grid; gap: 14px; margin-bottom: 24px; color: #eeeaf5; font-size: 14px; }
+.web-speech__status { margin: 0; color: #c5b2ff; }
+.web-speech__language { display: grid; gap: 6px; }
+.web-speech select, .web-speech button { font: inherit; color: #f5f2ff; background: #272031; border: 1px solid #66557b; border-radius: 9px; padding: 9px 12px; }
+.web-speech select { width: 100%; }
+.web-speech__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.web-speech button { cursor: pointer; }
+.web-speech button:disabled { opacity: .45; cursor: not-allowed; }
+.web-speech button:focus-visible, .web-speech select:focus-visible { outline: 2px solid #c5b2ff; outline-offset: 3px; }
+.web-speech__transcript { max-height: 240px; min-height: 100px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #0e0c13; border: 1px solid #42364f; border-radius: 12px; padding: 14px; line-height: 1.65; user-select: text; }
+.web-speech__interim { color: #b9accb; font-style: italic; }
+.web-speech__error { color: #ffb9b9; margin: 0; }
+.web-speech__hint { color: #b8adc6; font-size: 12px; line-height: 1.5; margin: 0; }
