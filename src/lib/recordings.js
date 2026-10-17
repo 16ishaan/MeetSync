@@ -12,7 +12,7 @@ export async function saveRecording({ blob, durationMs, userId }) {
   }
 
   const recordingId = crypto.randomUUID();
-  const extension = blob.type.includes('mp4') ? 'mp4' : 'webm';
+  const extension = blob.type.includes('mpeg') || blob.type.includes('mp3') ? 'mp3' : blob.type.includes('mp4') ? 'mp4' : 'webm';
   const storagePath = `${userId}/${recordingId}.${extension}`;
 
   const { error: uploadError } = await supabase.storage

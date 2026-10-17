@@ -11,7 +11,7 @@ const errors = {
   "language-not-supported": "This language is unavailable. Choose another language.",
 };
 
-export default function WebSpeechIntelligence() {
+export default function WebSpeechIntelligence({ onTranscript }) {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const supported = Boolean(Recognition) && window.isSecureContext;
   const [language, setLanguage] = useState("en-IN");
@@ -111,6 +111,7 @@ export default function WebSpeechIntelligence() {
         {transcript || (!interim && "Your transcript will appear here as you speak.")}
         {interim && <span className="web-speech__interim"> {interim}</span>}
       </div>
+      {transcript && !active && <button type="button" className="mom-capture-send" onClick={() => onTranscript?.(transcript)}>Use transcript for MOM →</button>}
       <p className="web-speech__hint">Captures your microphone. Your browser may send audio to its speech service. Stop before downloading; start again to append more speech.</p>
     </div>
   );

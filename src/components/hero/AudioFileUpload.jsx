@@ -11,7 +11,7 @@ const isMp3File = (file) => {
   return hasMp3Extension && hasAllowedMimeType;
 };
 
-export default function AudioFileUpload({ user }) {
+export default function AudioFileUpload({ user, onTranscript }) {
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("MP3 files only.");
   const [fileName, setFileName] = useState("");
@@ -33,12 +33,15 @@ export default function AudioFileUpload({ user }) {
     event.target.value = "";
 
     if (!file) return;
+    if (file.size > 100 * 1024 * 1024) { setStatus("error"); setMessage("Choose an MP3 smaller than 100 MB."); return; }
+    setTranscript("");
 
     if (!isMp3File(file)) {
       setStatus("error");
       setMessage(
         "Only .mp3 audio files are allowed. Please choose an MP3 file.",
       );
+      fileRef.current = null;
       setFileName("");
       setPreviewUrl("");
       return;
@@ -77,9 +80,9 @@ export default function AudioFileUpload({ user }) {
         fileRef.current,
         fileRef.current.name,
       );
-      setTranscript(result.text || "No speech was detected.");
+      setTranscript(result.text || "");
       setMessage(
-        `Transcription complete. Detected language: ${result.language}.`,
+        result.text ? `Transcription complete. Detected language: ${result.language}.` : "No speech detected. Choose another recording.",
       );
     } catch (error) {
       setMessage(`Transcription unavailable: ${error.message}`);
@@ -146,6 +149,7 @@ export default function AudioFileUpload({ user }) {
         <div className="audio-upload__transcript" aria-live="polite">
           <strong>Transcript</strong>
           <p>{transcript}</p>
+          <button type="button" className="mom-capture-send" onClick={() => onTranscript?.(transcript)}>Use transcript for MOM →</button>
         </div>
       )}
     </div>

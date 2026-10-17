@@ -505,6 +505,7 @@ const useMobileDetection = () => {
 
 const MagicBento = ({
   cards = defaultCardData,
+  onTranscript,
   textAutoHide = true,
   enableStars = true,
   enableSpotlight = true,
@@ -546,9 +547,9 @@ const MagicBento = ({
 
           const cardContent = (
             <>
-              {card.id === "record" && <AudioRecorder user={card.user} />}
-              {card.id === "upload" && <AudioFileUpload user={card.user} />}
-              {card.id === "speech" && <WebSpeechIntelligence />}
+              {card.id === "record" && <AudioRecorder user={card.user} onTranscript={onTranscript} />}
+              {card.id === "upload" && <AudioFileUpload user={card.user} onTranscript={onTranscript} />}
+              {card.id === "speech" && <WebSpeechIntelligence onTranscript={onTranscript} />}
               <div className="magic-bento-card__header">
                 <div className="magic-bento-card__label">{card.label}</div>
                 {card.accent && (

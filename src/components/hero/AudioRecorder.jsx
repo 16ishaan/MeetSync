@@ -21,7 +21,7 @@ const formatDuration = (durationMs) => {
   return `${minutes}:${seconds}`;
 };
 
-export default function AudioRecorder({ user }) {
+export default function AudioRecorder({ user, onTranscript }) {
   const [status, setStatus] = useState("idle");
   const [durationMs, setDurationMs] = useState(0);
   const [message, setMessage] = useState("Ready when you are.");
@@ -118,10 +118,13 @@ export default function AudioRecorder({ user }) {
       setMessage(
         "Browser audio selected. Waiting for microphone permission...",
       );
+      mediaStreamsRef.current = [browserStream];
       const microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
+      mediaStreamsRef.current.push(microphoneStream);
       const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
       await audioContext.resume();
       const destination = audioContext.createMediaStreamDestination();
       audioContext.createMediaStreamSource(browserStream).connect(destination);
@@ -145,6 +148,7 @@ export default function AudioRecorder({ user }) {
       chunksRef.current = [];
       startedAtRef.current = Date.now();
       setDurationMs(0);
+      setTranscript("");
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);
@@ -265,6 +269,8 @@ export default function AudioRecorder({ user }) {
         });
       }
       replacePlaybackUrl("");
+      latestBlobRef.current = null;
+      setTranscript("");
       setLocalRecordingId(null);
       setCloudRecording(null);
       setPlaybackError(false);
@@ -283,10 +289,10 @@ export default function AudioRecorder({ user }) {
     setMessage("Transcribing with Whisper...");
     try {
       const result = await transcribeAudio(latestBlobRef.current);
-      setTranscript(result.text || "No speech was detected.");
+      setTranscript(result.text || "");
       setStatus(cloudRecording ? "saved" : "saved-local");
       setMessage(
-        `Transcription complete. Detected language: ${result.language}.`,
+        result.text ? `Transcription complete. Detected language: ${result.language}.` : "No speech was detected. Try another recording.",
       );
     } catch (error) {
       setStatus(cloudRecording ? "saved" : "saved-local");
@@ -377,6 +383,7 @@ export default function AudioRecorder({ user }) {
         <div className="audio-recorder__transcript" aria-live="polite">
           <strong>Transcript</strong>
           <p>{transcript}</p>
+          <button type="button" className="mom-capture-send" onClick={() => onTranscript?.(transcript)}>Use transcript for MOM →</button>
         </div>
       )}
     </div>

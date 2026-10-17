@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Orb from "./Orb";
 import SpecularButton from "./SpecularButton";
 import TextPressure from "../TextPressure";
@@ -7,6 +7,7 @@ import SavedRecordings from "./SavedRecordings";
 import StaggeredMenu from "../StaggeredMenu/StaggeredMenu";
 import { supabase } from "../../lib/supabase";
 import "./Hero.css";
+import MinutesWorkspace from "./MinutesWorkspace";
 
 const launchCards = [
   {
@@ -36,6 +37,7 @@ const launchCards = [
 ];
 
 export default function Hero() {
+  const minutesRef = useRef(null);
   const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
   const [showLaunchpad, setShowLaunchpad] = useState(false);
   const [showSavedRecordings, setShowSavedRecordings] = useState(false);
@@ -135,19 +137,20 @@ export default function Hero() {
             <>
               <div className="hero__launchpad-header">
                 <div>
-                  <p className="hero__launchpad-kicker">MeetSync setup</p>
+                  <p className="hero__launchpad-kicker">MEETSYNC / YOUR MEETING WORKSPACE</p>
                   <h1 className="hero__launchpad-title">
-                    Pick how you want to capture the meeting.
+                    Good meetings deserve clear next steps.
                   </h1>
                   <p className="hero__launchpad-copy">
-                    Start a live recording, listen with web speech, or upload an
-                    existing file. The new interface keeps the workflow focused
-                    and card-driven.
+                    Record a meeting, capture live speech, or upload your audio.
+                    Send the transcript to your MOM workspace, review the draft,
+                    and download minutes your team can act on.
                   </p>
                 </div>
               </div>
 
               <MagicBento
+                onTranscript={(text) => minutesRef.current?.importTranscript(text)}
                 cards={launchCards.map((card) => ({ ...card, user }))}
                 textAutoHide={true}
                 enableStars={true}
@@ -160,6 +163,7 @@ export default function Hero() {
                 particleCount={12}
                 glowColor="132, 0, 255"
               />
+              <MinutesWorkspace ref={minutesRef} user={user} />
             </>
           )}
 
@@ -202,9 +206,9 @@ export default function Hero() {
               <h1 className="hero__headline">
                 Every meeting,
                 <br />
-                written down
+                turned into
                 <br />
-                <em>before it ends.</em>
+                <em>clear next steps.</em>
               </h1>
 
               <div className="hero__actions">
@@ -227,9 +231,9 @@ export default function Hero() {
               )}
 
               <p className="hero__footnote font-['Plus_Jakarta_Sans',sans-serif] text-base md:text-lg font-normal text-slate-600 leading-relaxed max-w-2xl mx-auto">
-                MeetSync captures your meetings and uses AI to transform raw
-                audio into structured Minutes of Meeting in seconds. Sign in
-                with Google to get summaries, key decisions, and assigned tasks ready to share with
+                MeetSync turns meeting transcripts into structured, editable
+                Minutes of Meeting. Sign in
+                with Google to capture a transcript, prepare editable minutes, and download a PDF for
                 your team.
               </p>
             </div>
