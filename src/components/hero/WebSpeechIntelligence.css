@@ -11,3 +11,9 @@
 .web-speech__interim { color: #b9accb; font-style: italic; }
 .web-speech__error { color: #ffb9b9; margin: 0; }
 .web-speech__hint { color: #b8adc6; font-size: 12px; line-height: 1.5; margin: 0; }
+.web-speech input { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 12px; color: #f5f2ff; background: #17121f; border: 1px solid #66557b; border-radius: 9px; font: inherit; }
+.web-speech input:focus-visible { outline: 2px solid #c5b2ff; outline-offset: 3px; }
+.web-speech__speaker-panel { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 14px; border: 1px solid #51435f; border-radius: 12px; background: #17121f; }
+.web-speech__speaker-panel audio { width: 100%; min-width: 0; }
+.web-speech__speaker-panel h4, .web-speech__speaker-panel p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.web-speech__speaker-panel strong { color: #d6c6ff; }

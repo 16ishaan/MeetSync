@@ -6,7 +6,7 @@ test('browser generation works without network or server and preserves source fa
   const draft = extractMinutes({ title: 'Planning', date: '2026-10-17', transcript: 'We agreed to ship PDF export. Ishaan will test the download before Friday. The next meeting is Monday.' });
   assert.equal(draft.method, 'browser-extractive');
   assert.equal(draft.decisions[0], 'We agreed to ship PDF export.');
-  assert.equal(draft.actions[0].owner, 'Not specified');
+  assert.equal(draft.actions[0].owner, 'Ishaan');
   assert.equal(draft.actions[0].due, 'Not specified');
   assert.equal(draft.next_steps[0], 'The next meeting is Monday.');
 });

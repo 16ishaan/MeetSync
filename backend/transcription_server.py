@@ -3,12 +3,13 @@ from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from minutes import Minutes, MinutesRequest, generate_minutes
 from pdf_export import render_minutes_pdf
+from speakers import speaker_status, detect_speakers
 
 MODEL_SIZE = os.getenv("WHISPER_MODEL", "base")
 MODEL_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
@@ -33,12 +34,49 @@ def get_model():
         MODEL_SIZE,
         device=MODEL_DEVICE,
         compute_type=MODEL_COMPUTE_TYPE,
+        download_root=str(Path(__file__).parent / 'models' / 'whisper'),
     )
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "model": MODEL_SIZE}
+
+
+@app.get('/speakers/status')
+def speakers_status():
+    return speaker_status()
+
+
+@app.post('/transcribe/speakers')
+async def transcribe_speakers(file: UploadFile = File(...), num_speakers: int = Form(default=-1, ge=-1, le=20)):
+    if num_speakers == 0:
+        raise HTTPException(status_code=422, detail='Choose auto-detect or 1–20 speakers.')
+    if not speaker_status()['available']:
+        raise HTTPException(status_code=503, detail=speaker_status()['message'])
+    suffix = Path(file.filename or '').suffix.lower()
+    if suffix not in {'.mp3', '.webm', '.wav', '.m4a', '.mp4', '.ogg'}:
+        raise HTTPException(status_code=400, detail='Unsupported audio format.')
+    contents = await file.read(30 * 1024 * 1024 + 1)
+    if len(contents) > 30 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail='Speaker recordings must be smaller than 30 MB.')
+    if not contents:
+        raise HTTPException(status_code=400, detail='The recording is empty.')
+    temp_path = None
+    try:
+        with NamedTemporaryFile(delete=False, suffix=suffix) as recording:
+            recording.write(contents)
+            temp_path = recording.name
+        return await run_in_threadpool(lambda: detect_speakers(temp_path, get_model(), num_speakers))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    except Exception as error:
+        import logging
+        logging.getLogger(__name__).exception('Speaker detection failed')
+        raise HTTPException(status_code=500, detail='Speaker detection failed. Check the local backend and model setup; your live transcript is still available.') from error
+    finally:
+        if temp_path:
+            Path(temp_path).unlink(missing_ok=True)
 
 
 @app.post("/transcribe")

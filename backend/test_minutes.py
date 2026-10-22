@@ -20,7 +20,7 @@ class MinutesTests(unittest.TestCase):
         result = response.json()
         self.assertEqual(result['method'], 'extractive')
         self.assertIn('agreed', result['decisions'][0])
-        self.assertEqual(result['actions'][0]['owner'], 'Not specified')
+        self.assertEqual(result['actions'][0]['owner'], 'Ishaan')
         self.assertEqual(result['actions'][0]['due'], 'Not specified')
         self.assertEqual(result['date'], self.request['date'])
         result['actions'][0]['owner'] = 'Ishaan'

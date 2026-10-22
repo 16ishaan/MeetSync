@@ -12,11 +12,42 @@ To opt into the optional AI backend, set `VITE_MOM_USE_BACKEND=true` in the fron
 
 ## Workflow
 
+### Speakers and who does what
+
+Live Speech now offers two modes:
+
+- **Live text with optional speaker name:** enter a name before Start. Stop, change the name, and start again when the speaker changes. These labels are manual.
+- **Live text + detect voices after Stop:** records the microphone alongside the browser transcript. Stop, optionally enter the known number of speakers (1–20), choose **Detect speakers**, listen to the recording, and rename the detected Speaker 1 / Speaker 2 groups. The updated transcript, download, and MOM import all use these names. Detection runs after the recording, not in real time. Clear before another speaker recording.
+
+Voice separation uses local sherpa-onnx with pyannote segmentation and NeMo TitaNet embeddings, plus faster-whisper word timestamps. It does not infer real identities or who is listening. People who do not speak cannot be detected. Overlapping or unmatched speech may be labelled Unknown speaker; voice groups and transcription need review. The browser may still send live speech to its speech service. **Detect speakers** sends the recording only to `VITE_TRANSCRIPTION_API_URL` (the local backend by default); temporary server audio is deleted afterward. No enrolled voiceprints are stored.
+
+The **Who does what** preview extracts explicit English assignments locally, without a paid API or text model. For example:
+
+```text
+Ishaan: hello everyone today jigisha will do the review for the product and risheek will do the backend testing
+
+Jigisha: do the review for the product
+Risheek: do the backend testing
+```
+
+The owner is the person assigned the task, not necessarily the speaker. “I will…” uses the named speaker label. Unclear pronouns remain Not specified. Attendee names preserve spelling. Separate explicit clauses and joint single-name owners are supported; ambiguous references and complex sentences need manual review in the editable MOM. This rule-based extraction is English-only. Optional Ollama generation also receives instructions to distinguish speakers from assignees.
+
+### Speaker detection setup
+
+The existing Python backend is required only for automatic voice detection, not for manual labels or task extraction. Install once from the repository root:
+
+```powershell
+.\backend\.venv\Scripts\python.exe -m pip install -r backend/requirements-speakers.txt
+.\backend\.venv\Scripts\python.exe backend/setup_speakers.py
+```
+
+Models download from the official [sherpa-onnx releases](https://k2-fsa.github.io/sherpa/onnx/speaker-diarization/models.html) into ignored `backend/models/`. No paid API key or Hugging Face account is needed. Retain the downloaded segmentation license. Whisper downloads its selected model into `backend/models/whisper/` on first use. Start the backend as described below, then check `GET /speakers/status`. Optional server variables `SPEAKER_SEGMENTATION_MODEL` and `SPEAKER_EMBEDDING_MODEL` select other installed compatible model paths. Speaker recordings are limited to 15 minutes / 30 MB. CPU processing can take time; canceling the browser request preserves the live text but an already-running server inference may finish in the background.
+
 1. Sign in with the existing Supabase Google authentication.
 2. Record tab + microphone audio, use live microphone speech recognition, upload an MP3, or paste your transcript directly.
 3. Choose **Use transcript for MOM** after transcription. Add the title, meeting date, and attendees.
 4. Choose **Generate MOM**. Review and edit the summary, discussion, decisions, action items (task, owner, deadline), and next steps.
-5. Choose **Download MOM as PDF**. The PDF contains your latest edits, repeated action table headers, and page numbers.
+5. Choose **Download MOM as PDF**. The PDF contains your latest edits in an ivory-and-gold layout with a serif title, attendee initials, numbered decisions, shaded action cards, deadline badges, and page numbers. Long content wraps and continues onto additional A4 pages. Dates and owners are taken from the reviewed draft.
 
 **Try sample** loads demonstration text without recording anything. **Save browser draft** and **Restore draft** retain one draft per signed-in user in this browser, not in cloud storage. Clearing a meeting also deletes its saved draft. This browser storage is not encrypted; do not use a shared browser for sensitive meetings.
 
@@ -86,6 +117,8 @@ This uses the local Ollama structured-output API; no paid API key is needed. Opt
 
 - `GET /health` — service status (does not preload Whisper).
 - `POST /transcribe` — multipart `file`, returns transcript and segments.
+- `GET /speakers/status` — whether local speaker dependencies and model files are present.
+- `POST /transcribe/speakers` — multipart `file` and optional `num_speakers` (`-1` for auto, or 1–20), returns speaker-labelled, timestamped segments from local models. Maximum 15 minutes / 30 MB.
 - `POST /minutes` — JSON `transcript`, `title`, `date`, `attendees`; returns editable MOM.
 - `POST /minutes/pdf` — reviewed MOM JSON; returns PDF bytes.
 

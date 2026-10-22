@@ -34,6 +34,10 @@
 .mom-action-heading { display: flex; gap: 12px; justify-content: space-between; align-items: center; }
 .mom-action-heading h4 { font-size: 14px; font-weight: 500; }
 .mom-action { border: 1px solid #42354e; padding: 15px; border-radius: 12px; margin-bottom: 16px; }
+.mom-assignees { padding: 16px; margin-bottom: 18px; border: 1px solid #51435f; border-radius: 12px; background: #211a2e; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.mom-assignees h4 { margin: 0 0 12px; }
+.mom-assignees strong { color: #cfbeff; }
+.mom-assignees ul { margin: 4px 0 14px; padding-left: 20px; }
 .mom-download { width: 100%; margin-top: 12px; }
 .mom-feedback, .mom-error, .mom-warning { padding: 14px 18px; background: #252032; border-radius: 10px; font-size: 13px; line-height: 1.7; }
 .mom-error { color: #ffb8b8; border: 1px solid #784648; }

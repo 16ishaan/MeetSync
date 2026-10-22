@@ -1,0 +1,2 @@
+# Optional local voice separation, used with the existing faster-whisper backend.
+sherpa-onnx==1.13.8
