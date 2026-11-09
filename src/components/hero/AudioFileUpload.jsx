@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import RecordingLanguage from "./RecordingLanguage";
 import { saveRecording } from "../../lib/recordings";
 import { transcribeAudio } from "../../lib/transcription";
 
@@ -13,9 +14,11 @@ const isMp3File = (file) => {
 
 export default function AudioFileUpload({ user, onTranscript }) {
   const [status, setStatus] = useState("idle");
-  const [message, setMessage] = useState("MP3 files only.");
+  const [message, setMessage] = useState("Choose an MP3 to transcribe with Whisper.");
+  const [transcriptionMessage, setTranscriptionMessage] = useState("");
   const [fileName, setFileName] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
+  const [language, setLanguage] = useState("");
   const [transcript, setTranscript] = useState("");
   const [transcribing, setTranscribing] = useState(false);
   const fileRef = useRef(null);
@@ -33,13 +36,13 @@ export default function AudioFileUpload({ user, onTranscript }) {
     event.target.value = "";
 
     if (!file) return;
-    if (file.size > 100 * 1024 * 1024) { setStatus("error"); setMessage("Choose an MP3 smaller than 100 MB."); return; }
+    setTranscriptionMessage("");
     setTranscript("");
 
-    if (!isMp3File(file)) {
+    if (!isMp3File(file) || file.size === 0 || file.size > 100 * 1024 * 1024) {
       setStatus("error");
       setMessage(
-        "Only .mp3 audio files are allowed. Please choose an MP3 file.",
+        "Choose a nonempty MP3 file up to 100 MB.",
       );
       fileRef.current = null;
       setFileName("");
@@ -52,7 +55,7 @@ export default function AudioFileUpload({ user, onTranscript }) {
     setPreviewUrl(nextPreviewUrl);
     setFileName(file.name);
     setStatus("selected");
-    setMessage("MP3 accepted. Ready to upload.");
+    setMessage("Ready to transcribe.");
 
     if (!user?.id) return;
 
@@ -61,9 +64,11 @@ export default function AudioFileUpload({ user, onTranscript }) {
 
     try {
       await saveRecording({ blob: file, durationMs: 0, userId: user.id });
+      if (fileRef.current !== file) return;
       setStatus("uploaded");
       setMessage("MP3 uploaded successfully.");
     } catch (error) {
+      if (fileRef.current !== file) return;
       setStatus("selected");
       setMessage(
         `MP3 ready locally. Cloud upload unavailable: ${error.message}`,
@@ -74,18 +79,21 @@ export default function AudioFileUpload({ user, onTranscript }) {
   const handleTranscribe = async () => {
     if (!fileRef.current) return;
     setTranscribing(true);
-    setMessage("Transcribing MP3 with Whisper...");
+    setTranscriptionMessage("Transcribing MP3 with Whisper…");
     try {
       const result = await transcribeAudio(
         fileRef.current,
         fileRef.current.name,
+        language,
       );
       setTranscript(result.text || "");
-      setMessage(
-        result.text ? `Transcription complete. Detected language: ${result.language}.` : "No speech detected. Choose another recording.",
+      setTranscriptionMessage(
+        result.text ? (language ? "Transcription complete." : `Transcription complete. Initial language: ${result.language}.`) : "No speech detected. Choose another recording.",
       );
     } catch (error) {
-      setMessage(`Transcription unavailable: ${error.message}`);
+      setTranscriptionMessage(error instanceof TypeError
+        ? "Cannot reach the transcription server. Start the MeetSync backend and try again."
+        : `Transcription unavailable: ${error.message}`);
     } finally {
       setTranscribing(false);
     }
@@ -107,9 +115,10 @@ export default function AudioFileUpload({ user, onTranscript }) {
       </div>
       <p
         className="audio-upload__message"
+        aria-live="polite"
         role={status === "error" ? "alert" : undefined}
       >
-        {message}
+        {transcriptionMessage || message}
       </p>
       {fileName && (
         <p className="audio-upload__filename" title={fileName}>
@@ -121,6 +130,7 @@ export default function AudioFileUpload({ user, onTranscript }) {
           type="button"
           className="audio-upload__button"
           onClick={() => inputRef.current?.click()}
+          disabled={transcribing}
         >
           Choose MP3
         </button>
@@ -131,20 +141,17 @@ export default function AudioFileUpload({ user, onTranscript }) {
           onChange={handleFileChange}
           hidden
         />
-        {previewUrl && (
-          <audio className="audio-upload__audio" controls src={previewUrl} />
-        )}
-        {previewUrl && (
-          <button
-            type="button"
-            className="audio-upload__button"
-            onClick={handleTranscribe}
-            disabled={transcribing}
-          >
-            {transcribing ? "Transcribing..." : "Transcribe"}
-          </button>
-        )}
+        {fileName && <RecordingLanguage value={language} onChange={setLanguage} disabled={transcribing} />}
+        <button
+          type="button"
+          className="audio-upload__button"
+          onClick={handleTranscribe}
+          disabled={!fileName || transcribing}
+        >
+          {transcribing ? "Transcribing…" : "Transcribe MP3"}
+        </button>
       </div>
+      {previewUrl && <audio className="audio-upload__audio" controls src={previewUrl} />}
       {transcript && (
         <div className="audio-upload__transcript" aria-live="polite">
           <strong>Transcript</strong>

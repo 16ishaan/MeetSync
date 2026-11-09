@@ -156,6 +156,19 @@
   padding: 0.65rem 0.85rem;
 }
 
+.recording-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+.recording-language select {
+  color: inherit;
+  background: #272031;
+  border: 1px solid #66557b;
+  border-radius: 8px;
+  padding: 0.4rem;
+}
 .audio-recorder__button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.18);
 }
@@ -291,7 +304,16 @@
   padding: 0.65rem 0.85rem;
 }
 
-.audio-upload__button:hover {
+.audio-upload__actions {
+  flex-wrap: wrap;
+}
+
+.audio-upload__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.audio-upload__button:hover:enabled {
   background: rgba(255, 255, 255, 0.18);
 }
 

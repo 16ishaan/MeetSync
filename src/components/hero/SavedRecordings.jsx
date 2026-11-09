@@ -3,6 +3,7 @@ import {
   deleteLocalRecording,
   getAllLocalRecordings,
 } from "../../lib/localRecordings";
+import DownloadMp3 from "./DownloadMp3";
 import "./SavedRecordings.css";
 
 const formatDuration = (durationMs) => {
@@ -150,7 +151,8 @@ function SavedRecordingCard({ recording, index, total, onDelete }) {
       <p>
         {formatDuration(recording.durationMs || 0)} of audio stored locally.
       </p>
-      {playbackUrl && <audio controls preload="metadata" src={playbackUrl} />}
+      <DownloadMp3 blob={recording.blob} filename={`meetsync-recording-${recording.id}.mp3`} />
+      {playbackUrl && <audio controls controlsList="nodownload" preload="metadata" src={playbackUrl} />}
       <button
         type="button"
         className="saved-recording-card__delete"

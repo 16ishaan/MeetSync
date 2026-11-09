@@ -1,9 +1,10 @@
 const TRANSCRIPTION_API_URL =
   import.meta.env.VITE_TRANSCRIPTION_API_URL || "http://127.0.0.1:8000";
 
-export async function transcribeAudio(blob, filename = "recording.webm") {
+export async function transcribeAudio(blob, filename = "recording.webm", language = "") {
   const formData = new FormData();
   formData.append("file", blob, filename);
+  if (language) formData.append("language", language);
 
   const response = await fetch(`${TRANSCRIPTION_API_URL}/transcribe`, {
     method: "POST",

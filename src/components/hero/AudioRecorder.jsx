@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import RecordingLanguage from "./RecordingLanguage";
+import DownloadMp3 from "./DownloadMp3";
 import { deleteRecording, saveRecording } from "../../lib/recordings";
 import { transcribeAudio } from "../../lib/transcription";
 import {
@@ -24,11 +26,14 @@ const formatDuration = (durationMs) => {
 export default function AudioRecorder({ user, onTranscript }) {
   const [status, setStatus] = useState("idle");
   const [durationMs, setDurationMs] = useState(0);
-  const [message, setMessage] = useState("Ready when you are.");
+  const [message, setMessage] = useState("Ready to record your microphone.");
+  const [includeTab, setIncludeTab] = useState(false);
+  const captureAttempt = useRef(0);
   const [playbackUrl, setPlaybackUrl] = useState("");
   const [playbackError, setPlaybackError] = useState(false);
   const [localRecordingId, setLocalRecordingId] = useState(null);
   const [cloudRecording, setCloudRecording] = useState(null);
+  const [language, setLanguage] = useState("");
   const [transcript, setTranscript] = useState("");
   const recorderRef = useRef(null);
   const mediaStreamsRef = useRef([]);
@@ -70,9 +75,10 @@ export default function AudioRecorder({ user, onTranscript }) {
 
     getLatestLocalRecording()
       .then((recording) => {
-        if (!active || !recording?.blob) return;
+        if (!active || captureAttempt.current || !recording?.blob) return;
         setLocalRecordingId(recording.id);
         latestBlobRef.current = recording.blob;
+        setDurationMs(recording.durationMs || 0);
         replacePlaybackUrl(URL.createObjectURL(recording.blob));
         setStatus("saved-local");
         setMessage("Latest recording is ready on this device.");
@@ -81,6 +87,8 @@ export default function AudioRecorder({ user, onTranscript }) {
 
     return () => {
       active = false;
+      if (captureAttempt.current) captureAttempt.current++;
+      if (recorderRef.current) recorderRef.current.onstop = null;
       window.clearInterval(timerRef.current);
       stopTracks();
       if (playbackUrlRef.current) URL.revokeObjectURL(playbackUrlRef.current);
@@ -90,60 +98,64 @@ export default function AudioRecorder({ user, onTranscript }) {
   const startRecording = async () => {
     if (
       !navigator.mediaDevices?.getUserMedia ||
-      !navigator.mediaDevices?.getDisplayMedia ||
       !window.MediaRecorder
     ) {
       setStatus("error");
       setMessage(
-        "This browser does not support microphone and browser audio recording.",
+        "Microphone recording requires a supported browser on HTTPS or localhost.",
       );
       return;
     }
 
+    const attempt = ++captureAttempt.current;
+    const keepStream = (stream) => {
+      if (attempt !== captureAttempt.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return false;
+      }
+      mediaStreamsRef.current.push(stream);
+      return true;
+    };
+    let browserStream;
     setStatus("requesting");
-    setMessage("Choose a browser tab and enable Share tab audio.");
 
     try {
-      const browserStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
-      if (browserStream.getAudioTracks().length === 0) {
-        browserStream.getTracks().forEach((track) => track.stop());
-        throw new Error(
-          "Browser audio was not shared. Choose a tab and enable Share tab audio.",
-        );
+      if (includeTab) {
+        setMessage("Choose the meeting tab and enable Share tab audio.");
+        browserStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true,
+        });
+        if (!keepStream(browserStream)) return;
+        if (!browserStream.getAudioTracks().length) {
+          throw new Error("Tab audio wasn't shared. Choose a tab with Share tab audio enabled, or uncheck Include tab audio to record your microphone.");
+        }
       }
 
-      setMessage(
-        "Browser audio selected. Waiting for microphone permission...",
-      );
-      mediaStreamsRef.current = [browserStream];
+      setMessage("Waiting for microphone permission…");
       const microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
-      mediaStreamsRef.current.push(microphoneStream);
-      const audioContext = new AudioContext();
-      audioContextRef.current = audioContext;
-      await audioContext.resume();
-      const destination = audioContext.createMediaStreamDestination();
-      audioContext.createMediaStreamSource(browserStream).connect(destination);
-      audioContext
-        .createMediaStreamSource(microphoneStream)
-        .connect(destination);
+      if (!keepStream(microphoneStream)) return;
+      let recordingStream = microphoneStream;
+      if (browserStream) {
+        const audioContext = new AudioContext();
+        audioContextRef.current = audioContext;
+        await audioContext.resume();
+        if (attempt !== captureAttempt.current) return;
+        const destination = audioContext.createMediaStreamDestination();
+        audioContext.createMediaStreamSource(browserStream).connect(destination);
+        audioContext.createMediaStreamSource(microphoneStream).connect(destination);
+        recordingStream = destination.stream;
+        keepStream(recordingStream);
+      }
 
       const mimeType = getSupportedMimeType();
       const recorder = new MediaRecorder(
-        destination.stream,
+        recordingStream,
         mimeType ? { mimeType } : undefined,
       );
 
-      mediaStreamsRef.current = [
-        browserStream,
-        microphoneStream,
-        destination.stream,
-      ];
-      audioContextRef.current = audioContext;
       recorderRef.current = recorder;
       chunksRef.current = [];
       startedAtRef.current = Date.now();
@@ -161,7 +173,7 @@ export default function AudioRecorder({ user, onTranscript }) {
         setMessage("The browser stopped the recording unexpectedly.");
       };
 
-      browserStream.getVideoTracks()[0]?.addEventListener("ended", () => {
+      browserStream?.getVideoTracks()[0]?.addEventListener("ended", () => {
         if (recorder.state !== "recording") return;
         setStatus("stopping");
         setMessage("Browser sharing ended. Finishing the recording...");
@@ -172,10 +184,10 @@ export default function AudioRecorder({ user, onTranscript }) {
         window.clearInterval(timerRef.current);
         stopTracks();
         const recordingDurationMs = Date.now() - startedAtRef.current;
-        setDurationMs(0);
+        setDurationMs(recordingDurationMs);
         setStatus("uploading");
         setMessage(
-          "Recording complete. Saving microphone and browser audio...",
+          "Recording complete. Saving audio…",
         );
 
         try {
@@ -188,7 +200,8 @@ export default function AudioRecorder({ user, onTranscript }) {
           replacePlaybackUrl(URL.createObjectURL(blob));
           latestBlobRef.current = blob;
           setPlaybackError(false);
-          setStatus("saved-local");
+          setCloudRecording(null);
+          setLocalRecordingId(null);
 
           try {
             const savedLocalId = await saveLocalRecording({
@@ -210,7 +223,7 @@ export default function AudioRecorder({ user, onTranscript }) {
               setCloudRecording(saved);
               setStatus("saved");
               setMessage(
-                `Saved microphone and browser audio to MeetSync at ${new Date(saved.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`,
+                `Saved to MeetSync at ${new Date(saved.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`,
               );
             } catch (error) {
               setStatus("saved-local");
@@ -219,6 +232,7 @@ export default function AudioRecorder({ user, onTranscript }) {
               );
             }
           } else {
+            setStatus("saved-local");
             setMessage(
               "Saved on this device. Sign in later to save it to MeetSync.",
             );
@@ -231,18 +245,21 @@ export default function AudioRecorder({ user, onTranscript }) {
 
       recorder.start(1000);
       setStatus(recorder.state === "recording" ? "recording" : "error");
-      setMessage("Microphone and browser audio are being captured.");
+      setMessage(includeTab ? "Recording your microphone and tab audio." : "Recording your microphone.");
       if (recorder.state === "recording") {
         timerRef.current = window.setInterval(() => {
           setDurationMs(Date.now() - startedAtRef.current);
         }, 250);
       }
     } catch (error) {
+      if (attempt !== captureAttempt.current) return;
       stopTracks();
       setStatus("error");
       setMessage(
         error.name === "NotAllowedError"
-          ? "Recording permission was denied."
+          ? includeTab && !browserStream
+            ? "Tab sharing was canceled or blocked. Try again or uncheck Include tab audio."
+            : "Microphone access was blocked. Allow microphone access for this site and try again."
           : error.message || "Unable to start audio capture.",
       );
     }
@@ -252,7 +269,7 @@ export default function AudioRecorder({ user, onTranscript }) {
     if (!recorderRef.current || recorderRef.current.state !== "recording")
       return;
     setStatus("stopping");
-    setMessage("Finishing the microphone and browser audio file...");
+    setMessage("Finishing the recording…");
     recorderRef.current.stop();
   };
 
@@ -288,11 +305,11 @@ export default function AudioRecorder({ user, onTranscript }) {
     setStatus("transcribing");
     setMessage("Transcribing with Whisper...");
     try {
-      const result = await transcribeAudio(latestBlobRef.current);
+      const result = await transcribeAudio(latestBlobRef.current, undefined, language);
       setTranscript(result.text || "");
       setStatus(cloudRecording ? "saved" : "saved-local");
       setMessage(
-        result.text ? `Transcription complete. Detected language: ${result.language}.` : "No speech was detected. Try another recording.",
+        result.text ? (language ? "Transcription complete." : `Transcription complete. Initial language: ${result.language}.`) : "No speech was detected. Try another recording.",
       );
     } catch (error) {
       setStatus(cloudRecording ? "saved" : "saved-local");
@@ -327,6 +344,14 @@ export default function AudioRecorder({ user, onTranscript }) {
         <span>{message}</span>
       </div>
       <div className="audio-recorder__actions">
+        <label>
+          <input
+            type="checkbox"
+            checked={includeTab}
+            disabled={isRecording || isBusy || !navigator.mediaDevices?.getDisplayMedia}
+            onChange={(event) => setIncludeTab(event.target.checked)}
+          /> Include tab audio
+        </label>
         <button
           type="button"
           className="audio-recorder__button"
@@ -343,6 +368,7 @@ export default function AudioRecorder({ user, onTranscript }) {
           <audio
             className="audio-recorder__audio"
             controls
+            controlsList="nodownload"
             preload="metadata"
             src={playbackUrl}
             onError={() => {
@@ -353,12 +379,14 @@ export default function AudioRecorder({ user, onTranscript }) {
             }}
           />
         )}
+        {playbackUrl && <DownloadMp3 blob={latestBlobRef.current} disabled={isBusy || isRecording} />}
+        {playbackUrl && <RecordingLanguage value={language} onChange={setLanguage} disabled={isBusy || isRecording} />}
         {playbackUrl && (
           <button
             type="button"
             className="audio-recorder__button"
             onClick={transcribeCurrentRecording}
-            disabled={isBusy}
+            disabled={isBusy || isRecording}
           >
             Transcribe
           </button>
@@ -368,7 +396,7 @@ export default function AudioRecorder({ user, onTranscript }) {
             type="button"
             className="audio-recorder__delete-button"
             onClick={deleteCurrentRecording}
-            disabled={isBusy}
+            disabled={isBusy || isRecording}
           >
             Delete
           </button>

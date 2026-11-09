@@ -1,3 +1,4 @@
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -10,6 +11,10 @@ from starlette.concurrency import run_in_threadpool
 from minutes import Minutes, MinutesRequest, generate_minutes
 from pdf_export import render_minutes_pdf
 from speakers import speaker_status, detect_speakers
+
+SUPPORTED_LANGUAGES = frozenset(json.loads(
+    (Path(__file__).resolve().parents[1] / "shared" / "whisper-languages.json").read_text(encoding="utf-8")
+))
 
 MODEL_SIZE = os.getenv("WHISPER_MODEL", "base")
 MODEL_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
@@ -80,7 +85,12 @@ async def transcribe_speakers(file: UploadFile = File(...), num_speakers: int = 
 
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)) -> dict:
+async def transcribe(
+    file: UploadFile = File(...),
+    language: str | None = Form(default=None),
+) -> dict:
+    if language is not None and language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported transcription language.")
     if not file.filename:
         raise HTTPException(status_code=400, detail="An audio file is required.")
 
@@ -100,7 +110,7 @@ async def transcribe(file: UploadFile = File(...)) -> dict:
             temp_file.write(contents)
             temp_path = temp_file.name
 
-        return await run_in_threadpool(transcribe_path, temp_path)
+        return await run_in_threadpool(transcribe_path, temp_path, language)
     except Exception as error:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {error}") from error
     finally:
@@ -108,9 +118,13 @@ async def transcribe(file: UploadFile = File(...)) -> dict:
             Path(temp_path).unlink(missing_ok=True)
 
 
-def transcribe_path(temp_path):
+def transcribe_path(temp_path, language=None):
     segments, info = get_model().transcribe(
         temp_path,
+        language=language,
+        multilingual=language is None,
+        task="transcribe",
+        initial_prompt="यह हिन्दी की बातचीत है।" if language == "hi" else None,
         vad_filter=True,
         condition_on_previous_text=False,
     )
