@@ -1,4 +1,15 @@
 .mom-workspace { --mom-line: #353044; color: #f3efe4; padding: 56px 0 16px; scroll-margin-top: 28px; }
+.mom-history {
+  box-sizing: border-box; margin: auto; width: min(640px, calc(100vw - 32px));
+  max-height: 80vh; overflow: auto; padding: 24px; background: #19151f;
+  border: 1px solid #494052; border-radius: 18px; color: #f3efe4;
+}
+.mom-history::backdrop { background: rgb(10 8 14 / 70%); }
+.mom-history header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mom-history h2, .mom-history h3 { margin: 0; }
+.mom-history article { padding: 18px 0; border-top: 1px solid #494052; overflow-wrap: anywhere; }
+.mom-history time { color: #b7aec7; font-size: 0.85rem; }
+.mom-history article p { white-space: pre-wrap; line-height: 1.6; margin: 10px 0; }
 .mom-heading { display: flex; justify-content: space-between; align-items: end; gap: 40px; margin-bottom: 28px; }
 .mom-kicker { font: 11px var(--font-mono, monospace); letter-spacing: .2em; color: #a99bce; }
 .mom-heading h2 { font: 500 clamp(32px, 4vw, 52px)/1.08 var(--font-display, Georgia); margin: 16px 0 0; letter-spacing: -.03em; }

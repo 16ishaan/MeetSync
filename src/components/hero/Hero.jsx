@@ -7,6 +7,7 @@ import SavedRecordings from "./SavedRecordings";
 import StaggeredMenu from "../StaggeredMenu/StaggeredMenu";
 import { supabase } from "../../lib/supabase";
 import "./Hero.css";
+import MinutesHistory from "./MinutesHistory";
 import MinutesWorkspace from "./MinutesWorkspace";
 
 const launchCards = [
@@ -37,6 +38,7 @@ const launchCards = [
 ];
 
 export default function Hero() {
+  const [showHistory, setShowHistory] = useState(false);
   const minutesRef = useRef(null);
   const [timeLabel, setTimeLabel] = useState(() => formatKolkataTime());
   const [showLaunchpad, setShowLaunchpad] = useState(false);
@@ -122,13 +124,11 @@ export default function Hero() {
               link: "#",
               onClick: () => setShowSavedRecordings(true),
             },
-          ]}
-          socialItems={[
-            { label: "Twitter", link: "#" },
-            { label: "GitHub", link: "#" },
+            { label: "Previous MOMs", link: "#", onClick: () => setShowHistory(true) },
           ]}
         />
       )}
+      {showLaunchpad && showHistory && <MinutesHistory key={user?.id || "guest"} userId={user?.id} onClose={() => setShowHistory(false)} />}
       {showLaunchpad ? (
         <div className="hero__launchpad bento-section">
           {showSavedRecordings ? (

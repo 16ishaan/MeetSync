@@ -198,6 +198,7 @@ export const StaggeredMenu = ({
   }, [buildOpenTimeline]);
 
   const playClose = useCallback(() => {
+    busyRef.current = false;
     openTlRef.current?.kill();
     openTlRef.current = null;
     itemEntranceTweenRef.current?.kill();
@@ -333,21 +334,14 @@ export const StaggeredMenu = ({
   React.useEffect(() => {
     if (!closeOnClickAway || !open) return;
 
-    const handleClickOutside = event => {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target) &&
-        toggleBtnRef.current &&
-        !toggleBtnRef.current.contains(event.target)
-      ) {
+    const handleEscape = event => {
+      if (event.key === 'Escape') {
         closeMenu();
+        toggleBtnRef.current?.focus();
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [closeOnClickAway, open, closeMenu]);
 
   return (
@@ -357,6 +351,7 @@ export const StaggeredMenu = ({
       data-position={position}
       data-open={open || undefined}
     >
+      {open && closeOnClickAway && <div aria-hidden="true" className="sm-dismiss-area" onClick={closeMenu} />}
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {(() => {
           const raw = colors && colors.length ? colors.slice(0, 4) : ['#1e1e22', '#35353c'];
@@ -406,7 +401,9 @@ export const StaggeredMenu = ({
         </button>
       </header>
 
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
+      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open} onClick={event => {
+        if (closeOnClickAway && !event.target.closest('a, button')) closeMenu();
+      }}>
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (

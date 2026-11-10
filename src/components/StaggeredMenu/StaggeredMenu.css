@@ -16,6 +16,7 @@
   overflow: hidden;
 }
 
+.sm-dismiss-area { position: absolute; inset: 0; pointer-events: auto; }
 .staggered-menu-header {
   position: absolute;
   top: 0;

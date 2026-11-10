@@ -1,4 +1,5 @@
 import { forwardRef, useImperativeHandle, useState } from "react";
+import { archiveMinutes, legacyDraftId } from "../../lib/minutesHistory";
 import { generateMinutes, downloadMinutesPdf } from "../../lib/minutes";
 import "./MinutesWorkspace.css";
 
@@ -9,6 +10,7 @@ const demo = "Ishaan: Hello everyone, today Jigisha will do the review for the p
 const MinutesWorkspace = forwardRef(function MinutesWorkspace({ user }, ref) {
   const [meeting, setMeeting] = useState(emptyMeeting);
   const [minutes, setMinutes] = useState(null);
+  const [historyId, setHistoryId] = useState(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -30,7 +32,12 @@ const MinutesWorkspace = forwardRef(function MinutesWorkspace({ user }, ref) {
     if (minutes && !window.confirm("Generate a new draft? This replaces your edited minutes.")) return;
     setBusy("generate"); setError(""); setMessage("");
     try {
-      setMinutes(await generateMinutes({ ...meeting, title: meeting.title || "Meeting minutes" }));
+      const result = await generateMinutes({ ...meeting, title: meeting.title || "Meeting minutes" });
+      const id = crypto.randomUUID();
+      setMinutes(result);
+      setHistoryId(id);
+      try { archiveMinutes(user?.id, id, result); }
+      catch { setError("The MOM is ready, but browser storage could not save it to Previous MOMs."); }
       setDirty(false); setMessage("Draft ready. Review the sections below before exporting.");
     } catch (err) { setError(err.message); }
     finally { setBusy(""); }
@@ -38,12 +45,17 @@ const MinutesWorkspace = forwardRef(function MinutesWorkspace({ user }, ref) {
   const download = async () => {
     setBusy("pdf"); setError("");
     const exportData = { ...minutes, discussion: minutes.discussion.filter(s => s.trim()), decisions: minutes.decisions.filter(s => s.trim()), next_steps: minutes.next_steps.filter(s => s.trim()), actions: minutes.actions.filter(a => a.task.trim()) };
-    try { await downloadMinutesPdf(exportData); setMessage("PDF downloaded with your latest edits."); }
+    try {
+      await downloadMinutesPdf(exportData);
+      setMessage("PDF downloaded with your latest edits.");
+      try { archiveMinutes(user?.id, historyId, exportData); }
+      catch { setError("The PDF downloaded, but Previous MOMs could not save your latest edits."); }
+    }
     catch (err) { setError(err.message); }
     finally { setBusy(""); }
   };
   const save = () => {
-    try { localStorage.setItem(storageKey, JSON.stringify({ meeting, minutes, dirty })); setMessage("Draft saved in this browser. It is not synced to the cloud."); }
+    try { localStorage.setItem(storageKey, JSON.stringify({ meeting, minutes, dirty, historyId })); if (minutes) archiveMinutes(user?.id, historyId, minutes); setMessage("Draft saved in this browser. It is not synced to the cloud."); }
     catch { setError("Browser storage is full or disabled. Download your PDF to keep a copy."); }
   };
   const restore = () => {
@@ -53,6 +65,7 @@ const MinutesWorkspace = forwardRef(function MinutesWorkspace({ user }, ref) {
       const saved = JSON.parse(raw);
       if (!saved.meeting || typeof saved.meeting.transcript !== "string" || (saved.minutes && !Array.isArray(saved.minutes.actions))) throw new Error();
       if ((meeting.transcript || minutes) && !window.confirm("Replace your current work with the saved browser draft?")) return;
+      setHistoryId(saved.historyId || legacyDraftId);
       setMeeting(saved.meeting); setMinutes(saved.minutes); setDirty(Boolean(saved.dirty)); setMessage("Browser draft restored."); setError("");
     } catch { setError("This saved draft cannot be restored."); }
   };
